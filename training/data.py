@@ -167,11 +167,12 @@ class SupervisedDataset(Dataset):
         if "video" in sources:
             is_dummy = False
             is_video = True
-            images=None
+
             grid_key = "video_grid_thw"
             pixel_key = "pixel_values_videos"
 
             video_files = sources["video"]
+
             def is_video_file(filename):
                 video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.mpeg']
                 return any(filename.lower().endswith(ext) for ext in video_extensions)
@@ -196,7 +197,7 @@ class SupervisedDataset(Dataset):
 
         sources = copy.deepcopy(llava_to_openai(sources['conversations'], is_video=is_video))
 
-        all_input_ids = [] 
+        all_input_ids = []
         all_labels = []
         all_pixel_values = []
         all_image_grid_thw = []
