@@ -6,7 +6,7 @@ from torch.nn import CrossEntropyLoss
 import numpy as np
 import transformers.models.qwen2_vl.modeling_qwen2_vl
 import transformers.models.qwen2_5_vl.modeling_qwen2_5_vl
-from flash_attn.layers.rotary import apply_rotary_emb
+#from flash_attn.layers.rotary import apply_rotary_emb
 from liger_kernel.transformers.fused_linear_cross_entropy import (
     LigerFusedLinearCrossEntropyLoss
 )
