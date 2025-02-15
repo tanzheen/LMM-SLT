@@ -1,0 +1,16 @@
+#!/bin/bash
+#PBS -N convert_frames_to_videos
+#PBS -l select=1:ncpus=36:mpiprocs=1:ompthreads=36:mem=250gb:ngpus=1
+#PBS -l walltime=72:00:00
+
+
+cd $PBS_O_WORKDIR; 
+cd LMM-SLT
+
+image="/app1/common/singularity-img/hopper/pytorch/pytorch_2.4.0a0-cuda_12.5.0_ngc_24.06.sif"
+
+singularity exec $image bash << EOF > stdout.$PBS_JOBID 2> stderr.$PBS_JOBID
+python transform_images_to_vid.py /scratch/e0724993/PHOENIX-2014-T-release-v3/PHOENIX-2014-T/features/fullFrame-210x260px/ --fps 25
+
+
+EOF

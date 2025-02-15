@@ -61,7 +61,7 @@ def process_folders(base_path):
         base_path (str): Path containing folders with image sequences
     """
     base_path = Path(base_path)
-    for phase in ["test"]:
+    for phase in ["train", "dev","test"]:
     # Get all subdirectories
         base_path_phase = os.path.join(base_path, phase)
         folders = [os.path.join(base_path_phase, f) for f in os.listdir( base_path_phase) if os.path.isdir(os.path.join(base_path_phase, f))]
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Convert image sequences to videos")
-    parser.add_argument("base_path", default = "../../PHOENIX-2014-T-release-v3/PHOENIX-2014-T/features/fullFrame-210x260px/", help="Path containing folders with image sequences")
+    parser.add_argument("base_path", default = "../PHOENIX-2014-T-release-v3/PHOENIX-2014-T/features/fullFrame-210x260px/", help="Path containing folders with image sequences")
     parser.add_argument("--fps", type=int, default=25, help="Frames per second for the output videos")
     
     args = parser.parse_args()
