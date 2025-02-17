@@ -56,6 +56,9 @@ def configure_llm(model, training_args):
     llm_params = model.model.parameters()
     set_requires_grad(llm_params, not training_args.freeze_llm)
 
+import numpy as np
+from nltk.translate.bleu_score import corpus_bleu
+
 
 def train():
     global local_rank

@@ -16,6 +16,7 @@ class TrainingArguments(TrainingArguments):
     adam_beta1: float = field(default=0.9)
     adam_beta2: float = field(default=0.999)
     adam_epsilon: float = field(default=1e-8)
+    eval_strategy: str = field(default="epoch")
 
     freeze_vision_tower: bool = field(default=False)
     freeze_llm: bool = field(default=False)

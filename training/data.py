@@ -74,7 +74,7 @@ def get_image_info(image_path, min_pixel, max_pixel):
 
 
 
-def get_video_info(video_path, min_pixels, max_pixels, fps):
+def get_video_info(video_path, min_pixels, max_pixels, fps=25):
     # Using this because of process_vision_info function
     # Need to fix this in the future
 
@@ -84,8 +84,6 @@ def get_video_info(video_path, min_pixels, max_pixels, fps):
              {
                 "type": "video", 
                 "video": video_path,
-                "min_pixels": min_pixels,
-                "max_pixels": max_pixels,
                 "fps": fps
             }
             ]
@@ -171,7 +169,7 @@ class SupervisedDataset(Dataset):
             grid_key = "video_grid_thw"
             pixel_key = "pixel_values_videos"
 
-            video_files = sources["video"]
+            video_files = sources["name"]+".mp4"
 
             def is_video_file(filename):
                 video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.mpeg']
@@ -179,7 +177,7 @@ class SupervisedDataset(Dataset):
             if not is_video_file(video_files):
                 raise ValueError("THIS IS NOT A VIDEO")
 
-            tgt_sample = sources["text"]
+            translation = sources["text"]
             video_folder = self.data_args.image_folder
 
             if isinstance(video_files, str):
@@ -228,8 +226,7 @@ class SupervisedDataset(Dataset):
             prompt_input_ids = inputs['input_ids']
             all_pixel_values.append(inputs[pixel_key])
             all_image_grid_thw.append(inputs[grid_key])
-
-
+            
      
             response_input_ids = processor.tokenizer(gpt_response, add_special_tokens=False, padding=False, return_tensors='pt')['input_ids']
 
@@ -371,10 +368,13 @@ def llava_to_openai(conversations, is_video=False):
 def make_supervised_data_module(model_id, processor, data_args):
     """Make dataset and collator for supervised fine-tuning."""
     sft_dataset = SupervisedDataset(
-        data_path=data_args.data_path, processor=processor, data_args=data_args, model_id=model_id
+        data_path=data_args.train_data_path, processor=processor, data_args=data_args, model_id=model_id
     )
     data_collator = DataCollatorForSupervisedDataset(pad_token_id=processor.tokenizer.pad_token_id)
+    eval_dataset = SupervisedDataset(
+        data_path=data_args.eval_data_path, processor=processor, data_args=data_args, model_id=model_id
+    )
 
     return dict(train_dataset=sft_dataset,
-                eval_dataset=None,
+                eval_dataset=eval_dataset,
                 data_collator=data_collator)
