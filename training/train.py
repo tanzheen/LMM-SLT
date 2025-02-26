@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 from peft import LoraConfig, get_peft_model
 import ast
@@ -56,15 +57,33 @@ def configure_llm(model, training_args):
     llm_params = model.model.parameters()
     set_requires_grad(llm_params, not training_args.freeze_llm)
 
-import numpy as np
-from nltk.translate.bleu_score import corpus_bleu
-
-
 def train():
     global local_rank
 
+    # Set PyTorch memory allocation to expandable segments to avoid fragmentation
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+    
     parser = HfArgumentParser(
         (ModelArguments, DataArguments, TrainingArguments))
+    
+    
+    # Get the absolute path to the deepspeed config file
+    deepspeed_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                        "scripts", "zero3_offload.json")
+    
+    if not os.path.exists(deepspeed_config_path):
+        print(f"DeepSpeed config file not found at: {deepspeed_config_path}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Please ensure the file exists or provide the correct path.")
+        sys.exit(1)
+    
+    # Use the absolute path for deepspeed config
+    if len(sys.argv) > 1:
+        for i, arg in enumerate(sys.argv):
+            if arg == "--deepspeed" and i + 1 < len(sys.argv):
+                if sys.argv[i+1] == "scripts/zero3_offload.json":
+                    sys.argv[i+1] = deepspeed_config_path
+                    print(f"Updated deepspeed config path to: {deepspeed_config_path}")
     
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     
@@ -117,19 +136,42 @@ def train():
         ))
 
     if "Qwen2.5" in model_args.model_id:
+        # Force using SDPA instead of Flash Attention due to compatibility issues
+        print("Using SDPA attention implementation for Qwen2.5-VL")
         model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             model_args.model_id,
             torch_dtype=compute_dtype,
-            attn_implementation="flash_attention_2" if not training_args.disable_flash_attn2 else "sdpa", 
+            attn_implementation="sdpa",  # Force SDPA
             **bnb_model_from_pretrained_args
         )
+        
+        # Move model to device
+        if torch.cuda.is_available():
+            model = model.to(training_args.device)
     else:
+        # For Qwen2-VL, try Flash Attention if available
+        try:
+            # Check if flash attention is available
+            import flash_attn
+            has_flash_attn = True
+            print("Flash Attention is available")
+        except ImportError:
+            has_flash_attn = False
+            print("Flash Attention not available, will use SDPA")
+            
+        attn_implementation = "flash_attention_2" if (has_flash_attn and not training_args.disable_flash_attn2 and torch.cuda.is_available()) else "sdpa"
+        print(f"Using {attn_implementation} for Qwen2-VL")
+        
         model = Qwen2VLForConditionalGeneration.from_pretrained(
             model_args.model_id,
             torch_dtype=compute_dtype,
-            attn_implementation="flash_attention_2" if not training_args.disable_flash_attn2 else "sdpa", 
+            attn_implementation=attn_implementation,
             **bnb_model_from_pretrained_args
         )
+        
+        # Move model to device
+        if torch.cuda.is_available():
+            model = model.to(training_args.device)
 
     model.config.use_cache = False
     model_to_configure = model
@@ -142,7 +184,15 @@ def train():
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=training_args.gradient_checkpointing, gradient_checkpointing_kwargs={"use_reentrant": True})
     
     if training_args.gradient_checkpointing:
+        print(f"Enabling gradient checkpointing with use_reentrant=True")
         model.enable_input_require_grads()
+        
+        # For Qwen2.5-VL, we need to be careful with gradient checkpointing and Flash Attention
+        if "Qwen2.5" in model_args.model_id:
+            # Make sure we're using SDPA with gradient checkpointing for Qwen2.5
+            model.config.attn_implementation = "sdpa"
+            print("Forced SDPA for Qwen2.5-VL with gradient checkpointing")
+            
         training_args.gradient_checkpointing_kwargs = {"use_reentrant": True}
 
     if training_args.lora_enable:
