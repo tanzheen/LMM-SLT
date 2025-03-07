@@ -55,6 +55,7 @@ class TrainingArguments(TrainingArguments):
     merger_lr: Optional[float] = None
     lora_namespan_exclude: str = field(default=None, metadata={"help": "List of namespan to exclude for LoRA"})
     num_lora_modules: int = -1
+    lora_target_modules: Optional[list[str]] = field(default=None, metadata={"help": "List of modules to apply LoRA to"})
 
 
 @dataclass
@@ -62,8 +63,24 @@ class DataArguments:
     data_path: str = field(
         default=None, metadata={"help": "Path to the training data."}
     )
+    train_data_path: str = field(
+        default=None, metadata={"help": "Path to the training data file."}
+    )
+    eval_data_path: str = field(
+        default=None, metadata={"help": "Path to the evaluation data file."}
+    )
     lazy_preprocess: bool = False
+    is_multimodal: bool = True
     image_folder: Optional[str] = field(default=None)
+    image_aspect_ratio: str = 'square'
+    image_grid_pinpoints: Optional[str] = field(
+        default=None,
+        metadata={"help": "The pinpoints for the image grid (for pasting images into the conversation). This is used by some image processors."}
+    )
+    # For Qwen2-VL
+    image_token_id: int = 151857
+    # For Qwen2.5-VL
+    image_token_id_qwen2_5: int = 151857
     image_min_pixels: Optional[int] = field(default=3136)
     image_max_pixels: Optional[int] = field(default=12845056)
     video_min_pixels: Optional[int] = field(default=100352)

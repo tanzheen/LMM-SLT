@@ -9,8 +9,7 @@ def load_dataset_file(filename):
 # i just need to keep the text , and the name which can be modified to be the video path 
 for dataset in ["train", "dev", "test"]:
     dataset = load_dataset_file(f"data/Phonexi-2014T/labels.{dataset}")
-    for key in dataset:
-        print(dataset[key]['text'])
+    print(dataset.keys())
 
 
 

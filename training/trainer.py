@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 import numpy as np
-from nltk.translate.bleu_score import corpus_bleu
+# from nltk.translate.bleu_score import corpus_bleu
 
 from transformers import Trainer
 from transformers.trainer import (
@@ -22,10 +22,13 @@ import safetensors
 from peft import PeftModel
 from typing import Optional
 import numpy as np
-from transformers.processing_utils import ProcessorMixin
 from transformers.modeling_utils import PreTrainedModel
 from peft import PeftModel
 from training.train_utils import get_peft_state_maybe_zero_3, get_peft_state_non_lora_maybe_zero_3
+import bitsandbytes
+
+# Add sacrebleu import
+from sacrebleu.metrics import BLEU
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
@@ -42,7 +45,6 @@ def maybe_zero_3(param, ignore_status=False, name=None):
     return param
 
 class QwenTrainer(Trainer):
-
     def __init__(self, processor, *args, **kwargs):
         super(QwenTrainer, self).__init__(*args, **kwargs)
         self.processor = processor
@@ -132,7 +134,7 @@ class QwenTrainer(Trainer):
 
             self.optimizer = optimizer_cls(optimizer_grouped_parameters, **optimizer_kwargs)
             if optimizer_cls.__name__ == "Adam8bit":
-                import bitsandbytes
+                
 
                 manager = bitsandbytes.optim.GlobalOptimManager.get_instance()
 
@@ -240,13 +242,25 @@ class QwenTrainer(Trainer):
         decoded_preds = self.processor.batch_decode(logits, skip_special_tokens=True)
         decoded_labels = self.processor.batch_decode(labels, skip_special_tokens=True)
         
-        # Optionally post-process the decoded texts (e.g., strip spaces)
+        # Optionally post-process the decoded texts
         decoded_preds = [pred.strip() for pred in decoded_preds]
         decoded_labels = [label.strip() for label in decoded_labels]
         
-        # Compute BLEU score (here we treat each reference as a single reference)
-        bleu_score = corpus_bleu([[ref.split()] for ref in decoded_labels], [pred.split() for pred in decoded_preds])
-        return {"bleu": bleu_score}
+        # Initialize BLEU scorer
+        bleu = BLEU()
+        
+        # Compute BLEU score
+        # sacrebleu expects a list of references for each prediction
+        # Here we have one reference per prediction
+        bleu_score = bleu.corpus_score(decoded_preds, [[ref] for ref in decoded_labels])
+        
+        return {
+            "bleu": bleu_score.score,  # Overall BLEU score
+            "bleu1": bleu_score.precisions[0],  # BLEU-1
+            "bleu2": bleu_score.precisions[1],  # BLEU-2
+            "bleu3": bleu_score.precisions[2],  # BLEU-3
+            "bleu4": bleu_score.precisions[3],  # BLEU-4
+        }
 
     # def training_step(self, model, inputs):
     #     for name, param in model.named_parameters():

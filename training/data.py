@@ -149,10 +149,14 @@ class SupervisedDataset(Dataset):
         ])
 
     def __len__(self):
-        return len(self.raw_data)
+        return len(self.list)
 
     def __getitem__(self, i) -> Dict[str, torch.Tensor]:
-        sources = self.raw_data[i]
+        if i >= len(self.list):
+            raise IndexError(f"Index {i} out of range for dataset with {len(self.list)} items")
+        
+        key = self.list[i]
+        sources = self.raw_data[key]
         # each iteration of the list: 
             # ['image']
             # ['video']
@@ -162,38 +166,38 @@ class SupervisedDataset(Dataset):
         processor = self.processor
 
         
-        if "video" in sources:
-            is_dummy = False
-            is_video = True
 
-            grid_key = "video_grid_thw"
-            pixel_key = "pixel_values_videos"
+        is_dummy = False
+        is_video = True
 
-            video_files = sources["name"]+".mp4"
+        grid_key = "video_grid_thw"
+        pixel_key = "pixel_values_videos"
 
-            def is_video_file(filename):
-                video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.mpeg']
-                return any(filename.lower().endswith(ext) for ext in video_extensions)
-            if not is_video_file(video_files):
-                raise ValueError("THIS IS NOT A VIDEO")
+        video_files = sources["name"]+".mp4"
 
-            translation = sources["text"]
-            video_folder = self.data_args.image_folder
+        def is_video_file(filename):
+            video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.mpeg']
+            return any(filename.lower().endswith(ext) for ext in video_extensions)
+        if not is_video_file(video_files):
+            raise ValueError("THIS IS NOT A VIDEO")
 
-            if isinstance(video_files, str):
-                video_files = [video_files]
+        translation = sources["text"]
+        video_folder = self.data_args.image_folder
 
-            videos = []
-            for video_file in video_files:
-                if not os.path.exists(video_file):
-                    if not video_file.startswith("http"):
-                        video_file = os.path.join(video_folder, video_file)
-                video_input, video_kwargs = get_video_info(video_file, self.video_min_pixel, self.video_max_pixel, self.data_args.fps)
-                videos.append(video_input)
-        else:
-            raise ValueError("No video or image found in the dataset")
+        if isinstance(video_files, str):
+            video_files = [video_files]
 
-        sources = copy.deepcopy(llava_to_openai(sources['conversations'], is_video=is_video))
+        videos = []
+        for video_file in video_files:
+            if not os.path.exists(video_file):
+                if not video_file.startswith("http"):
+                    video_file = os.path.join(video_folder, video_file)
+            video_input, video_kwargs = get_video_info(video_file, self.video_min_pixel, self.video_max_pixel, self.data_args.fps)
+            videos.append(video_input)
+
+        if not videos:
+            raise ValueError("No videos found")
+
 
         all_input_ids = []
         all_labels = []
@@ -212,8 +216,6 @@ class SupervisedDataset(Dataset):
             all_labels.append(system_labels.squeeze(0))
 
         for _, j in enumerate(range(0, len(sources), 2)):
-            user_input = sources[j]
-            gpt_response = sources[j + 1]
 
             user_input = f"{DEFAULT_IM_START_TOKEN}user\n{VISION_START_TOKEN}{DEFAULT_VIDEO_TOKEN}{VISION_END_TOKEN}Can you translate this sign language for me into German?\n{DEFAULT_IM_END_TOKEN}\n"
             gpt_response = f"{DEFAULT_IM_START_TOKEN}assistant\n{translation}{DEFAULT_IM_END_TOKEN}"
