@@ -1,3 +1,6 @@
 /Qwen-2.5-VL
 Qwen-2.5-VL.zip
 unsloth
+triton
+/unsloth_compiled_cache
+/outputs/checkpoint-30

@@ -84,7 +84,9 @@ def get_video_info(video_path, min_pixels, max_pixels, fps=25):
              {
                 "type": "video", 
                 "video": video_path,
-                "fps": fps
+                "fps": fps,
+                "min_pixels": min_pixels,
+                "max_pixels": max_pixels
             }
             ]
         }
