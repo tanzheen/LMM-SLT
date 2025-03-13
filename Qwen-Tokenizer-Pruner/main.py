@@ -3,6 +3,9 @@ import json
 import torch
 import argparse
 import base64
+import transformers
+print(f"Transformers version: {transformers.__version__}")
+print(f"Available Qwen classes: {[cls for cls in dir(transformers) if 'Qwen' in cls]}")
 from transformers import AutoProcessor, AutoModelForImageTextToText
 from vocab_count import count_freq, update_vocab_count_by_langfilter, count_recursive
 from vocab_save import get_new_vocab_and_map, save_vocab, save_vocab_hf, reduce_to_target_size
@@ -19,7 +22,7 @@ DetectorFactory.seed = 0
 def main():
     # start vocabulary pruning
     print('============ Start Qwen Vocabulary Pruning ==========')
-    
+
     # arg parser
     parser = argparse.ArgumentParser()
     parser.add_argument('--old_model_path', type=str, default="unsloth/Qwen2.5-3B-4bit")
@@ -90,8 +93,8 @@ def main():
                                                             old_vocab_size=old_vocab_size,
                                                             vocab_counts=vocab_counts)
     
-
-    save_vocab_hf(new_tokens_dict, mapping_new2old, args.new_model_path)
+    # save the new tokenizer
+    save_vocab_hf(new_tokens_dict, mapping_new2old, args.new_model_path, old_tokenizer)
     # save_vocab_hf(new_bytes_list, mapping_new2old, args.new_model_path)
     #mapping_new2old = torch.load(os.path.join(args.new_model_path, 'token_mapping.torch'))
     

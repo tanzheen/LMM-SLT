@@ -3,6 +3,7 @@ import torch
 import base64
 from tqdm import tqdm
 import json 
+from transformers import PreTrainedTokenizerFast
 
 def reduce_to_target_size(old_vocab_size, target_vocab_size, vocab_counts, recur_counts, old_bytes_list):
     total_count_with_idx = [(vocab_counts[i] + recur_counts[i], i) for i in range(old_vocab_size)]
@@ -81,11 +82,8 @@ def save_vocab(bytes_list, token_mapping, output_path):
     print(f"Mapping file (new token 2 old token) is saved: {token_mapping_path}")
 
 
-import os
-import json
-import torch
 
-def save_vocab_hf(new_tokens_dict, token_mapping, output_path):
+def save_vocab_hf(new_tokens_dict, token_mapping, output_path, old_tokenizer):
     vocab_file = os.path.join(output_path, 'vocab.json')
     merges_file = os.path.join(output_path, 'merges.txt')
     token_mapping_path = os.path.join(output_path, 'token_mapping.torch')
@@ -110,3 +108,21 @@ def save_vocab_hf(new_tokens_dict, token_mapping, output_path):
     # Saving token mapping
     torch.save(torch.LongTensor(token_mapping), token_mapping_path)
     print(f"Mapping file (new token to old token) is saved to {token_mapping_path}")
+
+    # Change the old to new tokenizer 
+    new_tokenizer = PreTrainedTokenizerFast(
+    vocab_file=vocab_file,
+    merges_file=merges_file,
+    unk_token=old_tokenizer.unk_token,
+    eos_token=old_tokenizer.eos_token,
+    pad_token=old_tokenizer.pad_token,
+)
+    # (Optional) If needed, add any special tokens explicitly.
+    new_tokenizer.add_special_tokens({
+    "unk_token": old_tokenizer.unk_token,
+    "eos_token": old_tokenizer.eos_token,
+    "pad_token": old_tokenizer.pad_token,
+    "bos_token": old_tokenizer.bos_token if old_tokenizer.bos_token else None,
+})
+    
+    new_tokenizer.save_pretrained(output_path)
