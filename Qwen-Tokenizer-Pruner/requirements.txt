@@ -1,0 +1,7 @@
+tqdm
+einops
+tiktoken
+torchvision
+langdetect
+transformers
+transformers_stream_generator
