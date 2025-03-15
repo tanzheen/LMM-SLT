@@ -52,7 +52,7 @@ deepspeed training/train.py \
     --report_to tensorboard \
     --lazy_preprocess True \
     --save_strategy "steps" \
-    --save_steps 200 \
+    --save_steps 400 \
     --save_total_limit 10 \
     --dataloader_num_workers 2 \
     --lora_enable True \
