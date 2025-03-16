@@ -62,7 +62,7 @@ def get_new_vocab_and_map(old_tokens_dict, old_vocab_size, vocab_counts):
             new_tokens_dict[token_str] = new_id
             mapping_new2old.append(old_id) # index in the list would be the new id and the value would be the old id
 
-    print(f"Vocabulary size: {old_vocab_size} => New vocab size: {len(new_tokens_dict)}")
+    print(f"Vocabulary size: {old_vocab_size} => New vocab size: {len(mapping_new2old)}")
     return new_tokens_dict, mapping_new2old 
 # new_tokens_dict: token string -> new token id (0, 1, 2, ...), mapping_new2old: new token id -> old token id
 

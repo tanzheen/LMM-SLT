@@ -5,3 +5,5 @@ triton
 /unsloth_compiled_cache
 /outputs/checkpoint-30
 /outputs
+/outputs-pruned-de
+*.txt

@@ -10,6 +10,7 @@ def saving_updated_qwenvl(old_model, new_vocab_size, token_mapping, output_path)
 
     # Define new embedding and LM head layers
     new_embeds = torch.nn.Embedding(new_vocab_size, old_model.config.hidden_size, dtype=embedding_layer.weight.dtype)
+    print(f"new_embeds: {new_embeds}")
     new_lm_head = torch.nn.Linear(old_model.config.hidden_size, new_vocab_size, bias=False, dtype=old_model.lm_head.weight.dtype)
 
     # Convert token mapping to tensor and move to the correct device
@@ -46,6 +47,7 @@ def saving_updated_qwenvl(old_model, new_vocab_size, token_mapping, output_path)
     # Save the updated model
     print(f"Saving new model checkpoint to {output_path}")
     old_model.save_pretrained(output_path)
+    print(f"old_model: {old_model}")
 
 
 

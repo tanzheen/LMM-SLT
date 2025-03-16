@@ -33,15 +33,19 @@ def count_freq_based_on_data(data, old_tokens_dict, tokenizer):
 
     # Add special tokens to vocab_counts TODO: check if this is correct
     # Retrieve special tokens
-    pad_token = tokenizer.pad_token
-    bos_token = tokenizer.bos_token
-    eos_token = tokenizer.eos_token
-    additional_special_tokens = tokenizer.additional_special_tokens
-
+    pad_token = tokenizer.pad_token_id
+    print(f"pad_token: {pad_token}")
+    bos_token = tokenizer.bos_token_id
+    print(f"bos_token: {bos_token}")
+    eos_token = tokenizer.eos_token_id
+    print(f"eos_token: {eos_token}")
+    additional_special_tokens = tokenizer.additional_special_tokens_ids
+    print(f"additional_special_tokens: {additional_special_tokens}")
     # Add special tokens to vocab_counts
     vocab_counts[pad_token] = 1
     vocab_counts[bos_token] = 1
     vocab_counts[eos_token] = 1
+    vocab_counts[151643] = 1
     for token in additional_special_tokens:
         vocab_counts[token] = 1
 

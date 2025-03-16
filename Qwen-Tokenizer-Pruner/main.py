@@ -7,7 +7,7 @@ import transformers
 print(f"Transformers version: {transformers.__version__}")
 print(f"Available Qwen classes: {[cls for cls in dir(transformers) if 'Qwen' in cls]}")
 from transformers import AutoProcessor, AutoModelForImageTextToText
-from vocab_count import count_freq, update_vocab_count_by_langfilter, count_recursive
+from vocab_count import count_freq_based_on_data, update_vocab_count_by_langfilter, count_recursive
 from vocab_save import get_new_vocab_and_map, save_vocab, save_vocab_hf, reduce_to_target_size
 from model_save import *
 from utils import get_bpe_file
@@ -18,8 +18,6 @@ from langdetect import DetectorFactory
 import gzip
 import pickle
 
-# 确保检测结果的一致性
-DetectorFactory.seed = 0
 
 
 def load_dataset_file(filename):
@@ -104,11 +102,11 @@ def main():
     # # save the new tokenizer
     # save_vocab_hf(new_tokens_dict, mapping_new2old, args.new_model_path, old_tokenizer)
     # save_vocab_hf(new_bytes_list, mapping_new2old, args.new_model_path)
-    mapping_new2old = list(torch.load(os.path.join(args.new_model_path, 'token_mapping.torch')))
+    #mapping_new2old = list(torch.load(os.path.join(args.new_model_path, 'token_mapping.torch')))
     
     # update model ckpt
     new_vocab_size = len(mapping_new2old)
-    print(f"==> Detected as Qwen-VL model")
+    print(f"==> Detected as Qwen-VL model with vocab size {new_vocab_size} ")
     saving_updated_qwenvl(old_model, new_vocab_size, mapping_new2old, args.new_model_path)
     old_tokenizer.save_pretrained(args.new_model_path)
 if __name__=='__main__':
